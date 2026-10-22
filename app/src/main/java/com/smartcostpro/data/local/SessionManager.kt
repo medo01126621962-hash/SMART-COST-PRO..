@@ -36,9 +36,10 @@ class SessionManager(context: Context) {
         null
     }
 
-    // Only non-sensitive settings are stored here.
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    // Reuse the existing encrypted preferences for settings when available to preserve them.
+    // If encryption is unavailable, ordinary preferences are used for non-sensitive settings only.
+    private val prefs: SharedPreferences = securePrefs
+        ?: context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _sessionState = MutableStateFlow<AuthSession?>(null)
     val sessionState: StateFlow<AuthSession?> = _sessionState.asStateFlow()
@@ -169,7 +170,7 @@ class SessionManager(context: Context) {
 
     companion object {
         private const val ENCRYPTED_PREFS_NAME = "smart_cost_encrypted_sec_prefs"
-        private const val PREFS_NAME = "smart_cost_preferences"
+        private const val PREFS_NAME = "smart_cost_fallback_prefs"
         private const val KEY_TOKEN = "auth_token"
         private const val KEY_USER_ID = "auth_user_id"
         private const val KEY_USER_EMAIL = "auth_user_email"
