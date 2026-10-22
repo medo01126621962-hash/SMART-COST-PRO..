@@ -7,6 +7,7 @@ import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -194,7 +195,7 @@ fun HomeScreen(
 
         val monthText = remember(uiState.selectedMonth) {
             uiState.selectedMonth.atDay(1)
-                .format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("ar", "EG")))
+                .format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("ar", "SA")))
         }
         val monthExpenses = uiState.monthExpenses
         val totalExpenses = HomeDashboardCalculations.totalForMonth(
@@ -234,7 +235,7 @@ fun HomeScreen(
                 append(monthText)
                 append("\nإجمالي المصروفات: ")
                 append(formatMoney(totalExpenses))
-                append(" ج.م")
+                append(" ر.س")
                 append("\nعدد العمليات: ")
                 append(monthExpenses.size)
                 monthExpenses.forEach { item ->
@@ -244,7 +245,7 @@ fun HomeScreen(
                     append(item.title)
                     append(" | ")
                     append(formatMoney(item.amount))
-                    append(" ج.م")
+                    append(" ر.س")
                 }
             }
             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -822,7 +823,7 @@ fun HomeScreen(
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text(
-                                    "الإجمالي: " + formatMoney(totalExpenses) + " ج.م",
+                                    "الإجمالي: " + formatMoney(totalExpenses) + " ر.س",
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                                     fontWeight = FontWeight.Bold,
                                     color = TextDark
@@ -861,7 +862,7 @@ fun HomeScreen(
                                 fontSize = 13.sp
                             )
                         } else {
-                            Text("إجمالي هذا القسم في الشهر المحدد: " + formatMoney(categoryTotal) + " ج.م", fontWeight = FontWeight.Bold, color = TextDark)
+                            Text("إجمالي هذا القسم في الشهر المحدد: " + formatMoney(categoryTotal) + " ر.س", fontWeight = FontWeight.Bold, color = TextDark)
                             if (categoryRows.isEmpty()) {
                                 Text("لا توجد عمليات مسجلة في هذا القسم لهذا الشهر.", color = TextMuted, fontSize = 12.sp)
                             } else {
@@ -998,6 +999,7 @@ private fun DashboardHeader(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DashboardTickerBar() {
     Surface(
@@ -1109,7 +1111,7 @@ private fun FinancialSummaryCard(
             ) {
                 Text(formatMoney(totalExpenses), fontSize = 31.sp, fontWeight = FontWeight.Black, color = RoyalGoldDark)
                 Spacer(Modifier.width(5.dp))
-                Text("ج.م", modifier = Modifier.padding(bottom = 4.dp), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                Text("ر.س", modifier = Modifier.padding(bottom = 4.dp), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextDark)
             }
 
             if (ratio != null) {
@@ -1227,7 +1229,7 @@ private fun DashboardCategoryCard(
             Text(category.title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextDark, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
             when {
-                amount != null -> Text(formatMoney(amount) + " ج.م", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = RoyalGoldDark, maxLines = 1)
+                amount != null -> Text(formatMoney(amount) + " ر.س", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = RoyalGoldDark, maxLines = 1)
                 category.id == "reports" -> Text("مشاركة كشف الشهر", fontSize = 10.sp, color = TextMuted)
                 else -> Text("قسم مستقل", fontSize = 10.sp, color = TextMuted)
             }
@@ -1255,7 +1257,7 @@ private fun RecentExpenseCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(horizontalAlignment = Alignment.Start) {
-                Text("- " + formatMoney(amount) + " ج.م", color = TextDark, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("- " + formatMoney(amount) + " ر.س", color = TextDark, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text(formatExpenseDate(date), color = TextMuted, fontSize = 10.sp)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
