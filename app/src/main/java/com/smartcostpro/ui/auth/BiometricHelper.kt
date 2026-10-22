@@ -13,8 +13,9 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 
 /**
- * Biometric Helper with genuine Android KeyStore CryptoObject binding.
- * Guarantees that biometric authentication unlocks a cryptographic key in hardware Keystore.
+ * Biometric helper using an Android Keystore key and a BiometricPrompt CryptoObject.
+ * If cryptographic authentication cannot be prepared, biometric login is refused and
+ * the caller should let the user use ordinary credential login instead.
  */
 object BiometricHelper {
 
@@ -24,27 +25,27 @@ object BiometricHelper {
 
     fun isBiometricAvailable(context: Context, isArabic: Boolean = true): Pair<Boolean, String?> {
         val biometricManager = BiometricManager.from(context)
-        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG
         return when (biometricManager.canAuthenticate(authenticators)) {
             BiometricManager.BIOMETRIC_SUCCESS -> Pair(true, null)
             BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> Pair(
                 false,
-                if (isArabic) "لا يتوفر مستشعر بيومتري (بصمة / Face ID) على هذا الجهاز"
-                else "No biometric hardware found on this device"
+                if (isArabic) "لا يتوفر مستشعر بصمة مناسب على هذا الجهاز"
+                else "No suitable biometric hardware found on this device"
             )
             BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> Pair(
                 false,
-                if (isArabic) "المستشعر البيومتري مشغول أو غير متاح حاليًا"
+                if (isArabic) "مستشعر البصمة غير متاح حاليًا"
                 else "Biometric hardware is currently unavailable"
             )
             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> Pair(
                 false,
-                if (isArabic) "لم يتم تسجيل بصمة أو وجه في إعدادات أمان هذا الجهاز بعد"
-                else "No biometric credentials enrolled in device security settings"
+                if (isArabic) "لم يتم تسجيل بصمة في إعدادات الجهاز"
+                else "No biometric credentials are enrolled on this device"
             )
             else -> Pair(
                 false,
-                if (isArabic) "التحقق البيومتري غير مدعوم على هذا الجهاز"
+                if (isArabic) "التحقق بالبصمة غير مدعوم على هذا الجهاز"
                 else "Biometric authentication is not supported on this device"
             )
         }
@@ -68,15 +69,10 @@ object BiometricHelper {
         return (keyStore.getEntry(BIOMETRIC_KEY_NAME, null) as KeyStore.SecretKeyEntry).secretKey
     }
 
-    private fun getInitializedCipher(): Cipher? {
-        return try {
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            val key = getOrCreateKey()
-            cipher.init(Cipher.ENCRYPT_MODE, key)
-            cipher
-        } catch (_: Exception) {
-            null
-        }
+    private fun getInitializedCipher(): Cipher {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+        return cipher
     }
 
     fun showBiometricPrompt(
@@ -87,6 +83,25 @@ object BiometricHelper {
         onSuccess: (BiometricPrompt.CryptoObject?) -> Unit,
         onError: (String) -> Unit
     ) {
+        val cipher = try {
+            getInitializedCipher()
+        } catch (_: Exception) {
+            onError("تعذر تهيئة الحماية الآمنة للبصمة. استخدم البريد الإلكتروني وكلمة المرور.")
+            return
+        }
+
+        val promptInfo = try {
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle(title)
+                .setSubtitle(subtitle)
+                .setNegativeButtonText(negativeButtonText)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .build()
+        } catch (_: Exception) {
+            onError("تعذر تجهيز التحقق بالبصمة. استخدم تسجيل الدخول العادي.")
+            return
+        }
+
         val executor = ContextCompat.getMainExecutor(activity)
         val prompt = BiometricPrompt(
             activity,
@@ -94,8 +109,12 @@ object BiometricHelper {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    // CryptoObject is genuinely unlocked by hardware Keystore
-                    onSuccess(result.cryptoObject)
+                    val authenticatedCipher = result.cryptoObject
+                    if (authenticatedCipher?.cipher == null) {
+                        onError("لم يكتمل التحقق التشفيري للبصمة. استخدم تسجيل الدخول العادي.")
+                    } else {
+                        onSuccess(authenticatedCipher)
+                    }
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -114,26 +133,6 @@ object BiometricHelper {
             }
         )
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(title)
-            .setSubtitle(subtitle)
-            .setNegativeButtonText(negativeButtonText)
-            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            .build()
-
-        val cipher = getInitializedCipher()
-        if (cipher != null) {
-            prompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
-        } else {
-            // Fallback for emulators or devices without strong hardware keystore user auth
-            prompt.authenticate(
-                BiometricPrompt.PromptInfo.Builder()
-                    .setTitle(title)
-                    .setSubtitle(subtitle)
-                    .setNegativeButtonText(negativeButtonText)
-                    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK)
-                    .build()
-            )
-        }
+        prompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
     }
 }
