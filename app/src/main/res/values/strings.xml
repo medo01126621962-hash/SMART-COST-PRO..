@@ -1,0 +1,49 @@
+<resources>
+    <string name="app_name">SMART COST PRO</string>
+    <string name="app_tagline">منظومة الإدارة والتكاليف التنفيذية الذكية</string>
+    <string name="auth_developer_name">eng.mamdouh saad</string>
+    
+    <!-- Exact Design Strings (image_880d3124.png) -->
+    <string name="login_identifier_label">اسم المستخدم أو البريد الإلكتروني</string>
+    <string name="login_identifier_placeholder">مثال: CEO@smartcost.pro أو 29401</string>
+    <string name="login_password_label">كلمة المرور المشفرة</string>
+    <string name="login_remember_device">تذكر هذا الجهاز الآمن</string>
+    <string name="login_forgot_password">استعادة كلمة المرور / الرمز؟</string>
+    <string name="login_submit_btn">تسجيل الدخول</string>
+    <string name="login_or_quick_login">أو تسجيل الدخول السريع</string>
+    <string name="login_biometric_title">الدخول السريع عبر Face ID / البصمة</string>
+    <string name="login_biometric_desc">التحقق البيومتري المعتمد لـ Android Keystore</string>
+    <string name="login_google_btn">الدخول بحساب Google</string>
+    <string name="login_no_account">ليس لديك حساب؟</string>
+    <string name="login_register_now">سجل الآن</string>
+    <string name="login_guest_btn">الدخول كزائر</string>
+    <string name="aes_indicator">bit AES-256</string>
+
+    <!-- Legacy / Shared Auth Strings -->
+    <string name="auth_welcome_back">مرحبًا بك مجددًا</string>
+    <string name="auth_create_account">إنشاء حساب جديد</string>
+    <string name="auth_forgot_password">استعادة كلمة المرور</string>
+    <string name="auth_full_name">الاسم بالكامل</string>
+    <string name="auth_username">اسم المستخدم</string>
+    <string name="auth_email">البريد الإلكتروني</string>
+    <string name="auth_password">كلمة المرور</string>
+    <string name="auth_new_password">كلمة المرور الجديدة</string>
+    <string name="auth_reset_code">رمز الاستعادة</string>
+    <string name="auth_sign_in">تسجيل الدخول</string>
+    <string name="auth_please_wait">يرجى الانتظار…</string>
+    <string name="auth_send_reset_code">إرسال رمز الاستعادة</string>
+    <string name="auth_reset_password_btn">تأكيد كلمة المرور الجديدة</string>
+    <string name="auth_or_continue_with">أو المتابعة عبر</string>
+    <string name="auth_continue_with_google">الدخول بحساب Google</string>
+    <string name="auth_continue_as_guest">الدخول كزائر (بدون مزامنة)</string>
+    <string name="auth_no_account">ليس لديك حساب؟</string>
+    <string name="auth_sign_up">سجل الآن</string>
+    <string name="auth_already_have_account">لديك حساب بالفعل؟</string>
+    <string name="auth_back_to_sign_in">العودة لتسجيل الدخول</string>
+    <string name="auth_choose_role">اختر نوع الحساب</string>
+    <string name="auth_choose_role_desc">حدد كيفية الدخول لهذه الجلسة.</string>
+    <string name="auth_role_owner">المتابعة كمالك</string>
+    <string name="auth_role_user">المتابعة كمستخدم</string>
+    <string name="auth_guest_badge">جلسة زائر (محلي)</string>
+    <string name="auth_sign_out">تسجيل الخروج</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "SMART COST PRO",
+  "description": "تطبيق SMART COST PRO الأصلي - شاشة الدخول ومنظومة المصادقة وإدارة المصروفات",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
