@@ -14,6 +14,7 @@ import androidx.fragment.app.FragmentActivity
 import com.smartcostpro.ui.auth.LoginScreen
 import com.smartcostpro.ui.auth.LoginViewModel
 import com.smartcostpro.ui.home.HomeScreen
+import com.smartcostpro.ui.home.HomeViewModel
 import com.smartcostpro.ui.theme.PearlWhite
 import com.smartcostpro.ui.theme.SmartCostProTheme
 
@@ -26,6 +27,8 @@ class MainActivity : FragmentActivity() {
             app.sessionManager
         )
     }
+
+    private val homeViewModel: HomeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +48,7 @@ class MainActivity : FragmentActivity() {
                         if (isLoggedIn) {
                             HomeScreen(
                                 session = session,
+                                viewModel = homeViewModel,
                                 onSignOut = {
                                     (application as SmartCostProApp).sessionManager.clearSession()
                                 }
