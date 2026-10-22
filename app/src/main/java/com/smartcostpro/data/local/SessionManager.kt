@@ -13,12 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 /**
- * Manages user sessions, device tokens, and encrypted state.
- * Encrypted using Android Keystore backed AES-256-GCM & AES-256-SIV via EncryptedSharedPreferences.
+ * Manages user sessions and device preferences.
+ * Authentication tokens and user session details are stored only in encrypted preferences.
+ * Non-sensitive preferences may use ordinary SharedPreferences.
  */
 class SessionManager(context: Context) {
 
-    private val prefs: SharedPreferences = try {
+    private val securePrefs: SharedPreferences? = try {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
@@ -29,10 +30,15 @@ class SessionManager(context: Context) {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-    } catch (e: Exception) {
-        Log.w("SessionManager", "Falling back to standard preferences: ${e.message}")
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    } catch (_: Exception) {
+        // Fail closed for session persistence. Never store authentication tokens in plaintext.
+        Log.w("SessionManager", "Encrypted session storage is unavailable; session will not persist.")
+        null
     }
+
+    // Only non-sensitive settings are stored here.
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _sessionState = MutableStateFlow<AuthSession?>(null)
     val sessionState: StateFlow<AuthSession?> = _sessionState.asStateFlow()
@@ -41,7 +47,6 @@ class SessionManager(context: Context) {
     val languageState: StateFlow<String> = _languageState.asStateFlow()
 
     init {
-        // If "remember device" is checked, load session automatically on startup
         if (isRememberDeviceEnabled()) {
             _sessionState.value = loadSession()
         }
@@ -56,33 +61,25 @@ class SessionManager(context: Context) {
         return deviceId
     }
 
-    fun isRememberDeviceEnabled(): Boolean {
-        return prefs.getBoolean(KEY_REMEMBER_DEVICE, true)
-    }
+    fun isRememberDeviceEnabled(): Boolean = prefs.getBoolean(KEY_REMEMBER_DEVICE, true)
 
     fun setRememberDeviceEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_REMEMBER_DEVICE, enabled).apply()
     }
 
-    fun getLastIdentifier(): String {
-        return prefs.getString(KEY_LAST_IDENTIFIER, "") ?: ""
-    }
+    fun getLastIdentifier(): String = prefs.getString(KEY_LAST_IDENTIFIER, "") ?: ""
 
     fun setLastIdentifier(identifier: String) {
         prefs.edit().putString(KEY_LAST_IDENTIFIER, identifier).apply()
     }
 
-    fun isBiometricEnabled(): Boolean {
-        return prefs.getBoolean(KEY_BIOMETRIC_ENABLED, false)
-    }
+    fun isBiometricEnabled(): Boolean = prefs.getBoolean(KEY_BIOMETRIC_ENABLED, false)
 
     fun setBiometricEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_BIOMETRIC_ENABLED, enabled).apply()
     }
 
-    fun loadLanguage(): String {
-        return prefs.getString(KEY_LANGUAGE, "ar") ?: "ar"
-    }
+    fun loadLanguage(): String = prefs.getString(KEY_LANGUAGE, "ar") ?: "ar"
 
     fun setLanguage(lang: String) {
         prefs.edit().putString(KEY_LANGUAGE, lang).apply()
@@ -91,40 +88,47 @@ class SessionManager(context: Context) {
 
     fun saveSession(session: AuthSession, rememberDevice: Boolean = true) {
         setRememberDeviceEnabled(rememberDevice)
-        prefs.edit().apply {
-            putString(KEY_TOKEN, session.token)
-            putString(KEY_USER_ID, session.user.id)
-            putString(KEY_USER_EMAIL, session.user.email)
-            putString(KEY_USER_NAME, session.user.name)
-            putString(KEY_USER_USERNAME, session.user.username ?: "")
-            putString(KEY_USER_PHONE, session.user.phone ?: "")
-            putBoolean(KEY_PHONE_VERIFIED, session.user.phoneVerified)
-            putString(KEY_USER_ROLE, session.user.role)
-            putString(KEY_ACTIVATION_STATUS, session.user.activationStatus)
-            putBoolean(KEY_IS_GUEST, session.isGuest)
-            apply()
+        val storage = securePrefs
+        if (storage != null) {
+            storage.edit().apply {
+                putString(KEY_TOKEN, session.token)
+                putString(KEY_USER_ID, session.user.id)
+                putString(KEY_USER_EMAIL, session.user.email)
+                putString(KEY_USER_NAME, session.user.name)
+                putString(KEY_USER_USERNAME, session.user.username ?: "")
+                putString(KEY_USER_PHONE, session.user.phone ?: "")
+                putBoolean(KEY_PHONE_VERIFIED, session.user.phoneVerified)
+                putString(KEY_USER_ROLE, session.user.role)
+                putString(KEY_ACTIVATION_STATUS, session.user.activationStatus)
+                putBoolean(KEY_IS_GUEST, session.isGuest)
+                apply()
+            }
+        } else {
+            // Keep this session in memory for the current run, but never persist it unencrypted.
+            Log.w("SessionManager", "Session is memory-only because encrypted storage is unavailable.")
         }
         _sessionState.value = session
     }
 
     fun loadSession(): AuthSession? {
-        val token = prefs.getString(KEY_TOKEN, null) ?: return null
-        val id = prefs.getString(KEY_USER_ID, "") ?: ""
-        val email = prefs.getString(KEY_USER_EMAIL, "") ?: ""
-        val name = prefs.getString(KEY_USER_NAME, "") ?: ""
-        val username = prefs.getString(KEY_USER_USERNAME, null)?.takeIf { it.isNotBlank() }
-        val phone = prefs.getString(KEY_USER_PHONE, null)?.takeIf { it.isNotBlank() }
-        val phoneVerified = prefs.getBoolean(KEY_PHONE_VERIFIED, false)
-        val role = prefs.getString(KEY_USER_ROLE, "user") ?: "user"
-        val activationStatus = prefs.getString(KEY_ACTIVATION_STATUS, "active") ?: "active"
-        val isGuest = prefs.getBoolean(KEY_IS_GUEST, false)
+        val storage = securePrefs ?: return null
+        val token = storage.getString(KEY_TOKEN, null) ?: return null
+        val id = storage.getString(KEY_USER_ID, "") ?: ""
+        val email = storage.getString(KEY_USER_EMAIL, "") ?: ""
+        val name = storage.getString(KEY_USER_NAME, "") ?: ""
+        val username = storage.getString(KEY_USER_USERNAME, null)?.takeIf { it.isNotBlank() }
+        val phone = storage.getString(KEY_USER_PHONE, null)?.takeIf { it.isNotBlank() }
+        val phoneVerified = storage.getBoolean(KEY_PHONE_VERIFIED, false)
+        val role = storage.getString(KEY_USER_ROLE, "user") ?: "user"
+        val activationStatus = storage.getString(KEY_ACTIVATION_STATUS, "active") ?: "active"
+        val isGuest = storage.getBoolean(KEY_IS_GUEST, false)
 
         val user = AuthUser(
             id = id,
             email = email,
             username = username,
-            name = name,
             phone = phone,
+            name = name,
             phoneVerified = phoneVerified,
             role = role,
             activationStatus = activationStatus
@@ -141,17 +145,13 @@ class SessionManager(context: Context) {
             role = "guest",
             activationStatus = "active"
         )
-        val session = AuthSession(
-            token = "guest-local-token",
-            user = guestUser,
-            isGuest = true
-        )
+        val session = AuthSession(token = "guest-local-token", user = guestUser, isGuest = true)
         saveSession(session, rememberDevice = false)
         return session
     }
 
     fun clearSession() {
-        prefs.edit().apply {
+        securePrefs?.edit()?.apply {
             remove(KEY_TOKEN)
             remove(KEY_USER_ID)
             remove(KEY_USER_EMAIL)
@@ -169,7 +169,7 @@ class SessionManager(context: Context) {
 
     companion object {
         private const val ENCRYPTED_PREFS_NAME = "smart_cost_encrypted_sec_prefs"
-        private const val PREFS_NAME = "smart_cost_fallback_prefs"
+        private const val PREFS_NAME = "smart_cost_preferences"
         private const val KEY_TOKEN = "auth_token"
         private const val KEY_USER_ID = "auth_user_id"
         private const val KEY_USER_EMAIL = "auth_user_email"
