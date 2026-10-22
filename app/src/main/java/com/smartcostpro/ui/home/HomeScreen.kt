@@ -477,18 +477,21 @@ fun HomeScreen(
                             Text("جارٍ تحميل المصروفات المحفوظة...", color = TextMuted, fontSize = 13.sp)
                         }
                     }
-                } else if (uiState.errorMessage != null) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF1F0)),
-                        border = BorderStroke(1.dp, Color(0xFFF4B8B3))
-                    ) {
-                        Text(
-                            uiState.errorMessage,
-                            modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            color = Color(0xFF9F2922),
-                            fontSize = 13.sp
-                        )
-                    }
+                } else {
+                    val dashboardErrorMessage = uiState.errorMessage
+                    if (dashboardErrorMessage != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF1F0)),
+                            border = BorderStroke(1.dp, Color(0xFFF4B8B3))
+                        ) {
+                            Text(
+                                text = dashboardErrorMessage,
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                color = Color(0xFF9F2922),
+                                fontSize = 13.sp
+                            )
+                        }
+                    } else if (recentExpenses.isEmpty()) {
                 } else if (recentExpenses.isEmpty()) {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = PureWhite),
