@@ -478,6 +478,7 @@ fun HomeScreen(
                         }
                     }
                 } else {
+                    // Keep the delegated UI state property in a stable local value before checking it.
                     val dashboardErrorMessage = uiState.errorMessage
                     if (dashboardErrorMessage != null) {
                         Card(
@@ -492,32 +493,32 @@ fun HomeScreen(
                             )
                         }
                     } else if (recentExpenses.isEmpty()) {
-                } else if (recentExpenses.isEmpty()) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = PureWhite),
-                        border = BorderStroke(1.dp, CardBorderSubtle)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(18.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PureWhite),
+                            border = BorderStroke(1.dp, CardBorderSubtle)
                         ) {
-                            Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = RoyalGoldDark, modifier = Modifier.size(28.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text("لا توجد مصروفات مسجلة في هذا الشهر", fontWeight = FontWeight.Bold, color = TextDark)
-                            Text("أضف أول مصروف لتحديث ملخصك المالي", fontSize = 12.sp, color = TextMuted)
-                        }
-                    }
-                } else {
-                    recentExpenses.forEach { expense ->
-                        RecentExpenseCard(
-                            title = expense.title,
-                            categoryName = titleForType(expense.type),
-                            date = expense.date,
-                            amount = expense.amount,
-                            onClick = {
-                                selectedCategory = dashboardCategories.firstOrNull { it.typeKey == expense.type }
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(18.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = RoyalGoldDark, modifier = Modifier.size(28.dp))
+                                Spacer(Modifier.height(8.dp))
+                                Text("لا توجد مصروفات مسجلة في هذا الشهر", fontWeight = FontWeight.Bold, color = TextDark)
+                                Text("أضف أول مصروف لتحديث ملخصك المالي", fontSize = 12.sp, color = TextMuted)
                             }
-                        )
+                        }
+                    } else {
+                        recentExpenses.forEach { expense ->
+                            RecentExpenseCard(
+                                title = expense.title,
+                                categoryName = titleForType(expense.type),
+                                date = expense.date,
+                                amount = expense.amount,
+                                onClick = {
+                                    selectedCategory = dashboardCategories.firstOrNull { it.typeKey == expense.type }
+                                }
+                            )
+                        }
                     }
                 }
 
