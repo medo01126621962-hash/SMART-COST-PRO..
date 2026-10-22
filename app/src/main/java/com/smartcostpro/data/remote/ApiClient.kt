@@ -9,7 +9,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    // Official backend URL from SMART-TIME repository
+    // Temporary endpoint from the existing SMART-TIME setup. Verify before production use.
     const val DEFAULT_BASE_URL = "https://smart-time-ai.duckdns.org"
 
     private val moshi: Moshi by lazy {
@@ -19,12 +19,14 @@ object ApiClient {
     }
 
     private val okHttpClient: OkHttpClient by lazy {
+        // Never log request/response bodies: they can contain passwords, reset codes, or tokens.
+        // Keep the interceptor disabled unless a safe, redacted debug logger is implemented.
         OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
             .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                level = HttpLoggingInterceptor.Level.NONE
             })
             .build()
     }
